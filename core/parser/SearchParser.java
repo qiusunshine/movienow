@@ -21,12 +21,13 @@ import java.util.List;
 public class SearchParser {
     /**
      * 解析搜索结果
+     * @param url url
      * @param movieInfo 规则1
      * @param s 源码
      * @param callback 回调
      */
-    public static void findList(MovieInfoUse movieInfo, String s, final BaseCallback<List<SearchResult>> callback) {
-        findList(movieInfo, s, new SearchBridgeCallBack() {
+    public static void findList(String url, MovieInfoUse movieInfo, String s, final BaseCallback<List<SearchResult>> callback) {
+        findList(url, movieInfo, s, new SearchBridgeCallBack() {
             @Override
             public void showData(List<SearchResult> data) {
                 callback.onSuccess(data);
@@ -41,13 +42,14 @@ public class SearchParser {
 
     /**
      * 解析搜索结果
+     * @param url url
      * @param movieInfo 规则1
      * @param s 源码
      * @param callback 回调
      * @param fromItem 来源
      */
-    public static void findList(MovieInfoUse movieInfo, String s, final SearchView callback, int fromItem) {
-        findList(movieInfo, s, new SearchBridgeCallBack() {
+    public static void findList(String url, MovieInfoUse movieInfo, String s, final SearchView callback, int fromItem) {
+        findList(url, movieInfo, s, new SearchBridgeCallBack() {
             @Override
             public void showData(List<SearchResult> data) {
                 callback.showData(data);
@@ -63,13 +65,14 @@ public class SearchParser {
 
     /**
      * 解析搜索结果
+     * @param url url
      * @param movieInfo 规则1
      * @param s 源码
      * @param callback 回调
      * @param fromItem 来源
      */
 
-    private static void findList(MovieInfoUse movieInfo, String s, SearchBridgeCallBack callback, int fromItem) {
+    public static void findList(String url, MovieInfoUse movieInfo, String s, SearchBridgeCallBack callback, int fromItem) {
         if (movieInfo.getSearchFind().startsWith("js:")) {
             JsEngineBridge.parseCallBack(movieInfo, s, callback);
             return;
@@ -119,7 +122,21 @@ public class SearchParser {
                     for (int i = 1; i < ss2.length - 1; i++) {
                         element3 = CommonParser.getTrueElement(ss2[i], elementt);
                     }
-                    listBean.setUrl(CommonParser.getUrl(element3, ss2[ss2.length - 1], movieInfo.getBaseUrl(), movieInfo.getChapterUrl()));
+                    listBean.setUrl(CommonParser.getUrl(element3, ss2[ss2.length - 1], movieInfo, url));
+                    //获取更多信息
+                    if(ss.length > 3 && !"*".equals(ss[3])){
+                        String[] ss3 = ss[3].split("&&");
+                        Element element4;
+                        if (ss3.length == 1) {
+                            element4 = elementt;
+                        } else {
+                            element4 = CommonParser.getTrueElement(ss3[0], elementt);
+                        }
+                        for (int i = 1; i < ss3.length - 1; i++) {
+                            element4 = CommonParser.getTrueElement(ss3[i], elementt);
+                        }
+                        listBean.setDescMore(CommonParser.getText(element4, ss3[ss3.length - 1]));
+                    }
                     //来自的网站名称
                     listBean.setDesc(movieInfo.getTitle());
                     listBean.setType("video");

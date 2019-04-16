@@ -60,6 +60,11 @@ public class DetectorManager {
         return xiuTanLiked.containsKey(dom) && xiuTanLiked.get(dom).equals(url);
     }
 
+    public void clearXiuTanLiked(Context context) {
+        initXiuTanLiked(context);
+        xiuTanLiked.clear();
+    }
+
     private void initXiuTanLiked(Context context){
         if(xiuTanLiked==null){
             synchronized (this){
@@ -126,25 +131,24 @@ public class DetectorManager {
     }
 
     private static VideoInfo detect(Video video, boolean isSimpleMode) {
-        VideoInfo info = detectSimple(video.getUrl(),video.getTitle());
         if(isSimpleMode){
-            return info;
-        }else if(info==null){
+            return detectSimple(video.getUrl(),video.getTitle());
+        }else {
             try {
-                info = detectComplex(video.getUrl(),video.getTitle());
+                return detectComplex(video.getUrl(),video.getTitle());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        return info;
+        return null;
     }
 
     private static VideoInfo detectSimple(String url,String title){
         int res = DetectUrlUtil.isVideoSimple(url);
         if(res>=0){
             com.dyh.movienow.ui.setting.entity.VideoInfo videoInfo1 = new com.dyh.movienow.ui.setting.entity.VideoInfo();
-            if(res < DetectUrlUtil.images.length){
-                videoInfo1.setDetectImageType(DetectUrlUtil.images[res].replace(".",""));
+            if(res < DetectUrlUtil.images.size()){
+                videoInfo1.setDetectImageType(DetectUrlUtil.images.get(res).replace(".",""));
             }
             videoInfo1.setSourcePageTitle(title);
             videoInfo1.setSourcePageUrl(url);

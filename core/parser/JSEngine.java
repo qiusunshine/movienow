@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.dyh.movienow.bean.ChapterBean;
 import com.dyh.movienow.bean.MovieInfoUse;
+import com.dyh.movienow.bean.MovieRecommends;
 import com.dyh.movienow.bean.SearchResult;
 
 import org.jsoup.Jsoup;
@@ -39,15 +40,19 @@ public class JSEngine {
     private volatile static JSEngine engine;
     private String lastResCode = "";
     private MovieInfoUse movieInfoUse;
+    private OnFindCallBack<String> stringOnFindCallBack;
     private OnFindCallBack<String> movieFindCallBack;
     private OnFindCallBack<List<SearchResult>> searchFindCallBack;
     private OnFindCallBack<List<ChapterBean>> chapterCallBack;
+    private OnFindCallBack<List<MovieRecommends>> homeCallBack;
     private volatile static LoadMode loadMode = LoadMode.MOVIE_FIND;
+    private String rule = null;
 
     private enum LoadMode {
         SEARCH,
         MOVIE_FIND,
-        CHAPTER
+        CHAPTER,
+        HOME
     }
 
     private JSEngine() {
@@ -66,12 +71,30 @@ public class JSEngine {
         return engine;
     }
 
+    private void destroyCallbacks(){
+        stringOnFindCallBack = null;
+        movieFindCallBack = null;
+        searchFindCallBack = null;
+        homeCallBack = null;
+    }
+
+    public synchronized void parseStr(String input, String js, MovieInfoUse movieInfoUse, OnFindCallBack<String> callBack) {
+        destroyCallbacks();
+        loadMode = LoadMode.SEARCH;
+        this.stringOnFindCallBack = callBack;
+        this.lastResCode = input;
+        this.movieInfoUse = movieInfoUse;
+        rule = null;
+        runScript(js);
+    }
 
     public synchronized void parseSearchRes(String res, MovieInfoUse movieInfoUse, OnFindCallBack<List<SearchResult>> searchJsCallBack) {
+        destroyCallbacks();
         loadMode = LoadMode.SEARCH;
         this.searchFindCallBack = searchJsCallBack;
         this.lastResCode = res;
         this.movieInfoUse = movieInfoUse;
+        rule = null;
         if (!movieInfoUse.getSearchFind().startsWith("js:")) {
             searchJsCallBack.showErr(movieInfoUse.getTitle() + "---搜索结果解析失败！请检查规则");
         } else {
@@ -80,10 +103,12 @@ public class JSEngine {
     }
 
     public synchronized void parseChapter(String res, MovieInfoUse movieInfoUse, OnFindCallBack<List<ChapterBean>> chapterCallBack) {
+        destroyCallbacks();
         loadMode = LoadMode.SEARCH;
         this.chapterCallBack = chapterCallBack;
         this.lastResCode = res;
         this.movieInfoUse = movieInfoUse;
+        rule = null;
         if (!movieInfoUse.getChapterFind().startsWith("js:")) {
             chapterCallBack.showErr(movieInfoUse.getTitle() + "---搜索结果解析失败！请检查规则");
         } else {
@@ -92,15 +117,27 @@ public class JSEngine {
     }
 
     public synchronized void parseMovieFind(String res, MovieInfoUse movieInfoUse, OnFindCallBack<String> callBack) {
+        destroyCallbacks();
         loadMode = LoadMode.MOVIE_FIND;
         this.movieFindCallBack = callBack;
         this.movieInfoUse = movieInfoUse;
         this.lastResCode = res;
+        rule = null;
         if (!movieInfoUse.getMovieFind().startsWith("js:")) {
             movieFindCallBack.showErr(movieInfoUse.getTitle() + "---搜索结果解析失败！请检查规则");
         } else {
             runScript(getDomScripts(res) + "\n" + movieInfoUse.getMovieFind().replaceFirst("js:", ""));
         }
+    }
+
+    public synchronized void parseHome(String input, String js, OnFindCallBack<List<MovieRecommends>> callBack) {
+        destroyCallbacks();
+        loadMode = LoadMode.HOME;
+        this.homeCallBack = callBack;
+        this.lastResCode = input;
+        this.rule = js.replaceFirst("js:", "");
+        this.movieInfoUse = null;
+        runScript(rule);
     }
 
     /**
@@ -161,6 +198,9 @@ public class JSEngine {
      */
     @JSAnnotation(returnType = 2)
     public String getRule() {
+        if(!TextUtils.isEmpty(rule)){
+            return rule;
+        }
         if (this.movieInfoUse == null) {
             return "null";
         }
@@ -197,6 +237,30 @@ public class JSEngine {
      * @param o 要回调的结果
      */
     @JSAnnotation
+    public void setStrResult(Object o) {
+        Object res = argsNativeObjectAdjust(o);
+        if (!(res instanceof String)) {
+            if (this.stringOnFindCallBack != null) {
+                this.stringOnFindCallBack.showErr(movieInfoUse.getTitle() + "---视频解析失败！请检查规则");
+            }
+            return;
+        }
+        try {
+            if (this.stringOnFindCallBack != null) {
+                this.stringOnFindCallBack.onSuccess((String) res);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.stringOnFindCallBack.showErr(movieInfoUse.getTitle() + "---视频解析失败！请检查规则");
+        }
+    }
+
+    /**
+     * 供js回调
+     *
+     * @param o 要回调的结果
+     */
+    @JSAnnotation
     public void setSearchResult(Object o) {
         Object res = argsNativeObjectAdjust(o);
         if (!(res instanceof JSONObject)) {
@@ -214,6 +278,9 @@ public class JSEngine {
                     searchResult.setTitle(array.getJSONObject(i).getString("title"));
                     searchResult.setUrl(array.getJSONObject(i).getString("url"));
                     searchResult.setDesc(this.movieInfoUse.getTitle());
+                    if(array.getJSONObject(i).containsKey("desc")) {
+                        searchResult.setDescMore(array.getJSONObject(i).getString("desc"));
+                    }
                     searchResult.setType("video");
                     results.add(searchResult);
                 } catch (Exception e) {
@@ -257,6 +324,46 @@ public class JSEngine {
      * @param o 要回调的结果
      */
     @JSAnnotation
+    public void setHomeResult(Object o) {
+        Object res = argsNativeObjectAdjust(o);
+        if (!(res instanceof JSONObject)) {
+            if (this.homeCallBack != null) {
+                this.homeCallBack.showErr("---分类结果解析失败！请检查规则：setHomeResult is not JSONObject");
+            }
+            return;
+        }
+        try {
+            JSONArray array = ((JSONObject) res).getJSONArray("data");
+            List<MovieRecommends> results = new ArrayList<>();
+            for (int i = 0; i < array.size(); i++) {
+                try {
+                    MovieRecommends searchResult = new MovieRecommends();
+                    searchResult.setTitle(array.getJSONObject(i).getString("title"));
+                    searchResult.setPic(array.getJSONObject(i).getString("pic_url"));
+                    searchResult.setDesc(array.getJSONObject(i).getString("desc"));
+                    try {
+                        searchResult.setUrl(array.getJSONObject(i).getString("url"));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    results.add(searchResult);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            this.homeCallBack.onSuccess(results);
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.homeCallBack.showErr("---分类结果解析失败！请检查规则：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 供js回调
+     *
+     * @param o 要回调的结果
+     */
+    @JSAnnotation
     public void setError(Object o) {
         Object res = argsNativeObjectAdjust(o);
         if (res instanceof String) {
@@ -266,6 +373,8 @@ public class JSEngine {
                 searchFindCallBack.showErr(movieInfoUse.getTitle() + "---解析失败！请检查规则：" + res);
             } else if (loadMode == LoadMode.CHAPTER && chapterCallBack != null) {
                 chapterCallBack.showErr(movieInfoUse.getTitle() + "---解析失败！请检查规则：" + res);
+            }else if (loadMode == LoadMode.HOME && homeCallBack != null) {
+                homeCallBack.showErr("---解析失败！请检查规则：" + res);
             }
         }
     }
@@ -281,15 +390,28 @@ public class JSEngine {
         rhino.setOptimizationLevel(-1);
         try {
             Scriptable scope = rhino.initStandardObjects();
-
             ScriptableObject.putProperty(scope, "javaContext", org.mozilla.javascript.Context.javaToJS(this, scope));//配置属性 javaContext:当前类JSEngine的上下文
             ScriptableObject.putProperty(scope, "javaLoader", org.mozilla.javascript.Context.javaToJS(clazz.getClassLoader(), scope));//配置属性 javaLoader:当前类的JSEngine的类加载器
-
             rhino.evaluateString(scope, runJSStr, clazz.getSimpleName(), 1, null);
         } finally {
             org.mozilla.javascript.Context.exit();
         }
     }
+
+    public synchronized String evalJS(String jsStr, String input) {
+        String js = "var input = '" + input + "';" + jsStr.replace("；；",";");
+        org.mozilla.javascript.Context rhino = org.mozilla.javascript.Context.enter();
+        rhino.setOptimizationLevel(-1);
+        try {
+            Scriptable scope = rhino.initStandardObjects();
+            ScriptableObject.putProperty(scope, "javaContext", org.mozilla.javascript.Context.javaToJS(this, scope));//配置属性 javaContext:当前类JSEngine的上下文
+            ScriptableObject.putProperty(scope, "javaLoader", org.mozilla.javascript.Context.javaToJS(clazz.getClassLoader(), scope));//配置属性 javaLoader:当前类的JSEngine的类加载器
+            return (String) rhino.evaluateString(scope, js, clazz.getSimpleName(), 1, null);
+        } finally {
+            org.mozilla.javascript.Context.exit();
+        }
+    }
+
 
     /**
      * 通过注解自动生成js方法语句

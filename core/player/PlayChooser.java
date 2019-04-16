@@ -47,10 +47,12 @@ public class PlayChooser {
             intent.putExtra("playerName","XPlayer");
         }else if(player==13){
             intent.putExtra("playerName","KMPlayer");
+        }else if(player==14){
+            intent.putExtra("playerName","MoboPlayer");
         }else {
             intent.putExtra("playerName","腾讯X5");
         }
-        if(player==0||player==3||player==11||player==12||player==13){
+        if(player==0||player==3||player==11||player==12||player==13||player==14){
             intent.setClass(context, CommonVideoPlayer.class);
         }else {
             intent.setClass(context, V4VideoPlayer.class);
@@ -69,6 +71,8 @@ public class PlayChooser {
                 return startXPlayer(context,title,url);
             case "KMPlayer":
                 return startKMPlayer(context,title,url);
+            case "MoboPlayer":
+                return startMoboPlayer(context,title,url);
             case "腾讯X5":
                 startX5(context, title, url);
                 return true;
@@ -89,17 +93,28 @@ public class PlayChooser {
         paramBundle.setData(FileUtils.getUri(context,url));
         paramBundle.putExtra("title",title);
         paramBundle.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        String message = "";
         if (appInstalledOrNot(context,"com.mxtech.videoplayer.ad")) {
-            paramBundle.setComponent(new ComponentName("com.mxtech.videoplayer.ad", "com.mxtech.videoplayer.ad.ActivityScreen"));
-            context.startActivity(paramBundle);
-            return true;
+            try {
+                paramBundle.setComponent(new ComponentName("com.mxtech.videoplayer.ad", "com.mxtech.videoplayer.ad.ActivityScreen"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = e.getMessage();
+            }
         }
         if (appInstalledOrNot(context,"com.mxtech.videoplayer.pro")) {
-            paramBundle.setComponent(new ComponentName("com.mxtech.videoplayer.pro", "com.mxtech.videoplayer.ActivityScreen"));
-            context.startActivity(paramBundle);
-            return true;
+            try {
+                paramBundle.setComponent(new ComponentName("com.mxtech.videoplayer.pro", "com.mxtech.videoplayer.ActivityScreen"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = message + "____" +e.getMessage();
+            }
         }
-        ToastMgr.toastShortBottomCenter(context,"没有安装MXPlayer！");
+        ToastMgr.toastShortBottomCenter(context,"没有安装MXPlayer！" + message);
         return false;
     }
 
@@ -109,12 +124,18 @@ public class PlayChooser {
         paramBundle.setData(FileUtils.getUri(context,url));
         paramBundle.putExtra("title",title);
         paramBundle.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        String message = "";
         if (appInstalledOrNot(context,"video.player.videoplayer")) {
-            paramBundle.setComponent(new ComponentName("video.player.videoplayer", "com.inshot.xplayer.activities.PlayerActivity"));
-            context.startActivity(paramBundle);
-            return true;
+            try {
+                paramBundle.setComponent(new ComponentName("video.player.videoplayer", "com.inshot.xplayer.activities.PlayerActivity"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = e.getMessage();
+            }
         }
-        ToastMgr.toastShortBottomCenter(context,"没有安装XPlayer！");
+        ToastMgr.toastShortBottomCenter(context,"没有安装XPlayer！" + message);
         return false;
     }
     private static boolean startKMPlayer(Context context, String title, String url) {
@@ -123,17 +144,28 @@ public class PlayChooser {
         paramBundle.setData(FileUtils.getUri(context,url));
         paramBundle.putExtra("title",title);
         paramBundle.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        String message = "";
         if (appInstalledOrNot(context,"com.kmplayerpro")) {
-            paramBundle.setComponent(new ComponentName("com.kmplayerpro", "com.kmplayer.activity.VideoPlayerActivity"));
-            context.startActivity(paramBundle);
-            return true;
+            try {
+                paramBundle.setComponent(new ComponentName("com.kmplayerpro", "com.kmplayer.activity.VideoPlayerActivity"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = e.getMessage();
+            }
         }
         if (appInstalledOrNot(context,"com.kmplayer")) {
-            paramBundle.setComponent(new ComponentName("com.kmplayer", "com.kmplayer.activity.VideoPlayerActivity"));
-            context.startActivity(paramBundle);
-            return true;
+            try {
+                paramBundle.setComponent(new ComponentName("com.kmplayer", "com.kmplayer.activity.VideoPlayerActivity"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = message + "____" +e.getMessage();
+            }
         }
-        ToastMgr.toastShortBottomCenter(context,"没有安装KMPlayer！");
+        ToastMgr.toastShortBottomCenter(context,"没有安装KMPlayer！" + message);
         return false;
     }
 
@@ -153,8 +185,39 @@ public class PlayChooser {
         }
     }
 
+    private static boolean startMoboPlayer(Context context, String title, String url){
+        Intent paramBundle = new Intent();
+        paramBundle.setAction("android.intent.action.VIEW");
+        paramBundle.setData(FileUtils.getUri(context,url));
+        paramBundle.putExtra("title",title);
+        paramBundle.putExtra("name",title);
+        paramBundle.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        String message = "";
+        if (appInstalledOrNot(context,"com.clov4r.android.nil.noad")) {
+            try {
+                paramBundle.setComponent(new ComponentName("com.clov4r.android.nil.noad", "com.clov4r.android.nil.ui.activity.MainActivity"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = e.getMessage();
+            }
+        }
+        if (appInstalledOrNot(context,"com.clov4r.android.nil")) {
+            try {
+                paramBundle.setComponent(new ComponentName("com.clov4r.android.nil", "com.clov4r.android.nil.ui.activity.MainActivity"));
+                context.startActivity(paramBundle);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                message = message + "____" +e.getMessage();
+            }
+        }
+        ToastMgr.toastShortBottomCenter(context,"没有安装MoboPlayer！" + message);
+        return false;
+    }
 
-    private static boolean appInstalledOrNot(Context context, String paramString) {
+    public static boolean appInstalledOrNot(Context context, String paramString) {
         try {
             PackageManager packageManager = context.getPackageManager();// 获取packagemanager
             List<PackageInfo> pinfo = packageManager.getInstalledPackages(0);// 获取所有已安装程序的包信息
