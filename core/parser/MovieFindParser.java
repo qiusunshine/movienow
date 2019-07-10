@@ -82,7 +82,7 @@ public class MovieFindParser {
                 for (int i = 1; i < ss0.length-1; i++) {
                     element0 = CommonParser.getTrueElement(ss0[i],element0);
                 }
-                callback.movieLoadSuccess(CommonParser.getUrl(element0,ss0[ss0.length-1],movieInfo,movieInfo.getMovieUrl()));
+                callback.movieLoadSuccess(CommonParser.getUrl(element0,ss0[ss0.length-1],movieInfo.getBaseUrl(),movieInfo.getChapterUrl()));
             }
             @Override
             public void onFailure(int errorCode, String msg) {

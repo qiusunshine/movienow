@@ -18,7 +18,14 @@ import java.util.List;
  * 时间：At 14:57
  */
 public class ChapterParser {
+//    private static String[] filters = {"播放","地址","源","来源","接口"};
 
+//    private static String getfilteredTitle(String name){
+//        for (int i = 0; i < filters.length; i++) {
+//            name = name.replace(filters[i],"");
+//        }
+//        return name;
+//    }
     public static void findList(MovieInfoUse movieInfo, String s, ChapterCallback callback){
         if(movieInfo.getChapterFind().startsWith("js:")){
             JsEngineBridge.parseCallBack(movieInfo, s, callback);
@@ -45,7 +52,7 @@ public class ChapterParser {
                 for (int i = 1; i < ss0.length-1; i++) {
                     element0= CommonParser.getTrueElement(ss0[i],element0);
                 }
-                listBeanHeader.setUrl(CommonParser.getUrl(element0,ss0[ss0.length-1],movieInfo,movieInfo.getChapterUrl()));
+                listBeanHeader.setUrl(CommonParser.getUrl(element0,ss0[ss0.length-1],movieInfo.getBaseUrl(),movieInfo.getChapterUrl()));
             }
             //获取简介
             String[] ss1 = ss[1].split("&&");
@@ -140,7 +147,7 @@ public class ChapterParser {
                     for (int i = 1; i < ss4.length-1; i++) {
                         element3= CommonParser.getTrueElement(ss4[i],element3);
                     }
-                    listBean.setUrl(CommonParser.getUrl(element3, ss4[ss4.length-1], movieInfo, movieInfo.getChapterUrl()));
+                    listBean.setUrl(CommonParser.getUrl(element3, ss4[ss4.length-1], movieInfo.getBaseUrl(), movieInfo.getChapterUrl()));
                     if(k<descStrs.size()){
                         if(k==0||!descStrs.get(k).equals(descStrs.get(k-1))){
                             ChapterBean chapterBean=new ChapterBean();
