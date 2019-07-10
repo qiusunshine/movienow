@@ -1,12 +1,16 @@
 package com.dyh.movienow.core.parser;
 
 import android.os.Looper;
+import android.text.TextUtils;
 
 import com.dyh.movienow.base.BaseCallback;
 import com.dyh.movienow.bean.ChapterBean;
 import com.dyh.movienow.bean.MovieInfoUse;
+import com.dyh.movienow.bean.MovieRecommends;
 import com.dyh.movienow.bean.SearchResult;
+import com.dyh.movienow.ui.TypeConstant;
 import com.dyh.movienow.ui.chapter.ChapterCallback;
+import com.dyh.movienow.ui.daoHang.DaoHangMovieCallBack;
 
 import java.util.List;
 
@@ -60,7 +64,7 @@ public class JsEngineBridge {
      * @param s 源码
      * @param callback 回调
      */
-    private static void parseCallBack(final MovieInfoUse movieInfo, final String s, final SearchJsCallBack<List<SearchResult>> callback){
+    public static void parseCallBack(final MovieInfoUse movieInfo, final String s, final SearchJsCallBack<List<SearchResult>> callback){
         if(Looper.myLooper() != Looper.getMainLooper()){
             JSEngine.getInstance().parseSearchRes(s, movieInfo, new JSEngine.OnFindCallBack<List<SearchResult>>() {
                 @Override
@@ -126,6 +130,98 @@ public class JsEngineBridge {
                         @Override
                         public void showErr(String msg) {
                             callback.loadFail(msg);
+                        }
+                    });
+                }
+            }).start();
+        }
+    }
+
+    /**
+     * 用JS解析字符串
+     * @param input 字符串
+     * @param js js规则
+     * @param movieInfoUse movieInfoUse
+     * @param callBack 返回
+     */
+    public static void parseCallBack(final String input, final String js,
+                                      final MovieInfoUse movieInfoUse, final JSEngine.OnFindCallBack<String> callBack){
+        if(Looper.myLooper() != Looper.getMainLooper()){
+            JSEngine.getInstance().parseStr(input, js, movieInfoUse, callBack);
+        }else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSEngine.getInstance().parseStr(input, js, movieInfoUse, callBack);
+                }
+            }).start();
+        }
+    }
+
+    public static void parseHomeCallBack(final String colType, final String rule, final String s, final boolean newLoad, final DaoHangMovieCallBack callback){
+        if(Looper.myLooper() != Looper.getMainLooper()){
+            JSEngine.getInstance().parseHome(s, rule, new JSEngine.OnFindCallBack<List<MovieRecommends>>() {
+                @Override
+                public void onSuccess(List<MovieRecommends> data) {
+                    if(!TextUtils.isEmpty(colType)) {
+                        for (int i = 0; i < data.size(); i++) {
+                            if("*".equals(data.get(i).getPic())){
+                                data.get(i).setType(TypeConstant.HOME_COL_TEXT_1);
+                            }else {
+                                data.get(i).setType(colType);
+                            }
+                        }
+                    }else {
+                        for (int i = 0; i < data.size(); i++) {
+                            if("*".equals(data.get(i).getPic())){
+                                data.get(i).setType(TypeConstant.HOME_COL_TEXT_1);
+                            }
+                        }
+                    }
+                    if (newLoad) {
+                        callback.loadNewSuccess(data);
+                    } else {
+                        callback.onSuccess(data);
+                    }
+                }
+
+                @Override
+                public void showErr(String msg) {
+                    callback.onError(msg);
+                }
+            });
+        }else {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    JSEngine.getInstance().parseHome(s, rule, new JSEngine.OnFindCallBack<List<MovieRecommends>>() {
+                        @Override
+                        public void onSuccess(List<MovieRecommends> data) {
+                            if(!TextUtils.isEmpty(colType)) {
+                                for (int i = 0; i < data.size(); i++) {
+                                    if("*".equals(data.get(i).getPic())){
+                                        data.get(i).setType(TypeConstant.HOME_COL_TEXT_1);
+                                    }else {
+                                        data.get(i).setType(colType);
+                                    }
+                                }
+                            }else {
+                                for (int i = 0; i < data.size(); i++) {
+                                    if("*".equals(data.get(i).getPic())){
+                                        data.get(i).setType(TypeConstant.HOME_COL_TEXT_1);
+                                    }
+                                }
+                            }
+                            if (newLoad) {
+                                callback.loadNewSuccess(data);
+                            } else {
+                                callback.onSuccess(data);
+                            }
+                        }
+
+                        @Override
+                        public void showErr(String msg) {
+                            callback.onError(msg);
                         }
                     });
                 }
