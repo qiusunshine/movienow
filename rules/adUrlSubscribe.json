@@ -1,7 +1,7 @@
 {
-  "title": "网址过滤链接",
+  "title": "广告网址拦截",
   "url": "https://raw.githubusercontent.com/qiusunshine/movienow/master/rules/adUrls.txt",
-  "version": 5,
+  "version": 6,
   "desc": "",
-  "time": "2019-10-22 20:54"
+  "time": "2019-10-26 16:05"
 }
