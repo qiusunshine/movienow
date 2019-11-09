@@ -10,7 +10,6 @@ import com.dyh.movienow.ui.setting.util.HttpRequestUtil;
 import com.dyh.movienow.ui.setting.util.M3U8Util;
 import com.dyh.movienow.ui.setting.util.UUIDUtil;
 import com.dyh.movienow.ui.setting.util.VideoFormatUtil;
-import com.dyh.movienow.util.CollectionUtil;
 import com.dyh.movienow.util.TextPinyinUtil;
 
 import org.greenrobot.eventbus.EventBus;
@@ -26,8 +25,8 @@ import java.util.Map;
  * 时间：At 13:23
  */
 public class DetectUrlUtil {
-    public static volatile List<String> filters = CollectionUtil.asList(".css", ".html", ".js", ".ttf", ".ico", ".png", ".jpg", ".jpeg", ".cnzz");
-    public static volatile List<String> images = CollectionUtil.asList("mp4", "m3u8", ".flv", ".avi", ".3gp", "mpeg", ".wmv", ".mov", "rmvb", ".dat", "qqBFdownload", ".mp3", ".wav", ".ogg", ".flac", ".m4a");
+    private static String[] filters = {".css", ".html", ".js", ".ttf", ".ico", ".png", ".jpg", ".jpeg", ".cnzz"};
+    public static String[] images = {"mp4", "m3u8", ".flv", ".avi", ".3gp", "mpeg", ".wmv", ".ts", ".mov", "rmvb", ".dat", "qqBFdownload"};
 
     public static void detectUrlToDownload(String url, String title, DetectListener listener) {
         try {
@@ -106,8 +105,8 @@ public class DetectUrlUtil {
                 return -1;
             }
         }
-        for (int i = 0; i < images.size(); i++) {
-            if (needCheckUrl.contains(images.get(i))) {
+        for (int i = 0; i < images.length; i++) {
+            if (needCheckUrl.contains(images[i])) {
                 return i;
             }
         }
@@ -144,7 +143,6 @@ public class DetectUrlUtil {
                 //检测成功，不是m3u8的视频
                 return null;
             }
-            videoInfo.setDetectImageType("m3u8");
             videoInfo.setDuration(duration);
         } else {
             long size = 0;
@@ -155,7 +153,6 @@ public class DetectUrlUtil {
                     e.printStackTrace();
                 }
             }
-            videoInfo.setDetectImageType(size / 1024 / 1024 + "MB");
             videoInfo.setSize(size);
         }
         videoInfo.setUrl(url);

@@ -2,7 +2,6 @@ package com.dyh.movienow.core.parser;
 
 import android.text.TextUtils;
 
-import com.dyh.movienow.bean.MovieInfoUse;
 import com.dyh.movienow.util.StringUtil;
 
 import org.jsoup.nodes.Element;
@@ -15,16 +14,9 @@ import org.jsoup.select.Elements;
  */
 public class CommonParser {
 
-    private static String[] normalAttrs = {"href", "src", "class", "title", "alt"};
-
     public static Element getTrueElement(String rule, Element element) {
         if (rule.startsWith("Text") || rule.startsWith("Attr")) {
             return element;
-        }
-        for (String normalAttr : normalAttrs) {
-            if (normalAttr.equals(rule)) {
-                return element;
-            }
         }
         String[] ors = rule.split("\\|\\|");
         if (ors.length > 1) {
@@ -107,9 +99,6 @@ public class CommonParser {
     }
 
     public static String getText(Element element, String lastRule) {
-        if ("*".equals(lastRule)) {
-            return "null";
-        }
         String[] ors = lastRule.split("\\|\\|");
         if (ors.length > 1) {
             for (int i = 0; i < ors.length; i++) {
@@ -149,23 +138,19 @@ public class CommonParser {
             } else if (lastRule.contains("Attr")) {
                 text = element.attr(lastRule.replace("Attr", ""));
             } else {
-                text = element.attr(lastRule);
-//                text = element.select(lastRule).first().toString();
+                text = element.select(lastRule).first().toString();
             }
             return StringUtil.replaceBlank(text);
         }
     }
 
-    public static String getUrl(Element element3, String lastRule, MovieInfoUse movieInfoUse, String lastUrl) {
-        if ("*".equals(lastRule)) {
-            return "null";
-        }
+    public static String getUrl(Element element3, String lastRule, String baseUrl, String chapterUrl) {
         String[] ors = lastRule.split("\\|\\|");
         if (ors.length > 1) {
             for (int i = 0; i < ors.length; i++) {
                 String e = null;
                 try {
-                    e = getUrlWithoutOr(element3, ors[i], movieInfoUse, lastUrl);
+                    e = getUrlWithoutOr(element3, ors[i], baseUrl, chapterUrl);
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -174,73 +159,47 @@ public class CommonParser {
                 }
             }
         }
-        return getUrlWithoutOr(element3, lastRule, movieInfoUse, lastUrl);
+        return getUrlWithoutOr(element3, lastRule, baseUrl, chapterUrl);
     }
 
-    private static String getUrlWithoutOr(Element element3, String lastRule, MovieInfoUse movieInfoUse, String lastUrl) {
-        String js = "";
-        String[] ss = lastRule.split("\\.js:");
-        if (ss.length > 1) {
-            lastRule = ss[0];
-            js = ss[1];
-        }
+    private static String getUrlWithoutOr(Element element3, String lastRule, String baseUrl, String chapterUrl) {
         String url;
-//        String[] rules = lastRule.split("@js:");
         if (lastRule.startsWith("Text")) {
             url = element3.text();
         } else if (lastRule.startsWith("AttrNo")) {
             url = element3.attr(lastRule.replaceFirst("AttrNo", ""));
-            return movieInfoUse.getBaseUrl() + url;
+            return baseUrl + url;
         } else if (lastRule.startsWith("AttrYes")) {
             url = element3.attr(lastRule.replaceFirst("AttrYes", ""));
         } else if (lastRule.startsWith("Attr")) {
             url = element3.attr(lastRule.replaceFirst("Attr", ""));
         } else {
-            url = element3.attr(lastRule);
-//            url = element3.select(lastRule).first().toString();
+            url = element3.select(lastRule).first().toString();
         }
-        if (TextUtils.isEmpty(js)) {
-            url = StringUtil.replaceBlank(url);
-        } else {
-            try {
-                url = JSEngine.getInstance().evalJS(js, url);
-            } catch (Exception e) {
-                url = StringUtil.replaceBlank(url);
-            }
-        }
+        url = StringUtil.replaceBlank(url);
         if (url.startsWith("http")) {
             return url;
         } else if (url.startsWith("//")) {
             return "http:" + url;
-        } else if (url.startsWith("magnet") || url.startsWith("thunder") || url.startsWith("ftp") || url.startsWith("ed2k")) {
-            return url;
         } else if (url.startsWith("/")) {
-            return movieInfoUse.getBaseUrl() + url;
-        } else if (url.startsWith("./")) {
-            String searchUrl = movieInfoUse.getSearchUrl().split(";")[0];
-            String[] c = searchUrl.split("/");
-            if (c.length <= 1) {
-                return url;
-            }
-            String sub = searchUrl.replace(c[c.length - 1], "");
-            return sub + url.replace("./", "");
+            return baseUrl + url;
         } else if (url.startsWith("?")) {
-            return lastUrl + url;
+            return chapterUrl + url;
         } else {
             String[] urls = url.split("\\$");
             if (urls.length > 1 && urls[1].startsWith("http")) {
                 return urls[1];
             }
-            if (url.contains("url(")) {
+            if(url.contains("url(")){
                 String[] urls2 = url.split("url\\(");
-                if (urls2.length > 1 && urls2[1].startsWith("http")) {
+                if(urls2.length > 1 && urls2[1].startsWith("http")) {
                     return urls2[1].split("\\)")[0];
                 }
             }
-            if (movieInfoUse.getBaseUrl().endsWith("/")) {
-                return movieInfoUse.getBaseUrl() + url;
+            if (baseUrl.endsWith("/")) {
+                return baseUrl + url;
             } else {
-                return lastUrl + "/" + url;
+                return baseUrl + "/" + url;
             }
         }
     }
